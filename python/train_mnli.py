@@ -57,18 +57,18 @@ else:
     dev_snli = load_nli_data(FIXED_PARAMETERS["dev_snli"], snli=True)
     test_snli = load_nli_data(FIXED_PARAMETERS["test_snli"], snli=True)
 
-    logger.Log("Loading data MNLI")
-    training_mnli = load_nli_data(FIXED_PARAMETERS["training_mnli"])
-    dev_matched = load_nli_data(FIXED_PARAMETERS["dev_matched"])
-    dev_mismatched = load_nli_data(FIXED_PARAMETERS["dev_mismatched"])
+   # logger.Log("Loading data MNLI")
+   # training_mnli = load_nli_data(FIXED_PARAMETERS["training_mnli"])
+   # dev_matched = load_nli_data(FIXED_PARAMETERS["dev_matched"])
+   # dev_mismatched = load_nli_data(FIXED_PARAMETERS["dev_mismatched"])
 
-    test_matched = load_nli_data(FIXED_PARAMETERS["test_matched"], shuffle = False)
-    test_mismatched = load_nli_data(FIXED_PARAMETERS["test_mismatched"], shuffle = False)
+   # test_matched = load_nli_data(FIXED_PARAMETERS["test_matched"], shuffle = False)
+   # test_mismatched = load_nli_data(FIXED_PARAMETERS["test_mismatched"], shuffle = False)
 
     shared_content = load_mnli_shared_content()
 
     logger.Log("Loading embeddings")
-    indices_to_words, word_indices, char_indices, indices_to_chars = sentences_to_padded_index_sequences([training_mnli, training_snli, dev_matched, dev_mismatched, test_matched, test_mismatched, dev_snli, test_snli])
+    indices_to_words, word_indices, char_indices, indices_to_chars = sentences_to_padded_index_sequences([training_snli, dev_snli, test_snli])
 
 config.char_vocab_size = len(char_indices.keys())
 
@@ -172,7 +172,7 @@ class modelClassifier:
                 
 
 
-    def train(self, train_mnli, train_snli, dev_mat, dev_mismat, dev_snli):
+    def train(self, train_snli, dev_snli):
         sess_config = tf.ConfigProto()
         sess_config.gpu_options.allow_growth=True   
         self.sess = tf.Session(config=sess_config)
@@ -221,7 +221,7 @@ class modelClassifier:
         while True:
             if config.training_completely_on_snli:
                 training_data = train_snli
-                beta = int(self.alpha * len(train_mnli))
+                beta = int(self.alpha * len(train_snli))
                 if config.snli_joint_train_with_mnli:
                     training_data = train_snli + random.sample(train_mnli, beta)
 
@@ -326,8 +326,8 @@ class modelClassifier:
                     self.eval_step = 100
                     self.save_step = 100
                     self.dont_print_unnecessary_info = True 
-                    # if config.use_sgd_at_the_end:
-                    #     self.optimizer =  tf.train.GradientDescentOptimizer(0.00001).minimize(self.model.total_cost, global_step = self.global_step)
+                if config.use_sgd_at_the_end:
+                    self.optimizer =  tf.train.GradientDescentOptimizer(0.00001).minimize(self.model.total_cost, global_step = self.global_step)
 
 
                 if self.best_dev_mat > 0.872 and config.training_completely_on_snli:
@@ -495,9 +495,9 @@ test = params.train_or_test()
 if config.preprocess_data_only:
     pass
 elif test == False:
-    classifier.train(training_mnli, training_snli, dev_matched, dev_mismatched, dev_snli)
-    logger.Log("Acc on matched multiNLI dev-set: %s" %(evaluate_classifier(classifier.classify, dev_matched, FIXED_PARAMETERS["batch_size"]))[0])
-    logger.Log("Acc on mismatched multiNLI dev-set: %s" %(evaluate_classifier(classifier.classify, dev_mismatched, FIXED_PARAMETERS["batch_size"]))[0])
+    classifier.train(training_snli, dev_snli)
+  #  logger.Log("Acc on matched multiNLI dev-set: %s" %(evaluate_classifier(classifier.classify, dev_matched, FIXED_PARAMETERS["batch_size"]))[0])
+  #  logger.Log("Acc on mismatched multiNLI dev-set: %s" %(evaluate_classifier(classifier.classify, dev_mismatched, FIXED_PARAMETERS["batch_size"]))[0])
     logger.Log("Acc on SNLI test-set: %s" %(evaluate_classifier(classifier.classify, test_snli, FIXED_PARAMETERS["batch_size"]))[0])
 
 
